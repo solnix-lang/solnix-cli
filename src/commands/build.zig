@@ -1,8 +1,10 @@
 const std = @import("std");
-const compiler = @import("solnix-compiler");
 const utils = @import("utils.zig");
 
-pub fn execute(allocator: std.mem.Allocator, args: []const []const u8) !void {
+pub fn execute(
+    allocator: std.mem.Allocator,
+    args: []const []const u8,
+) !void {
     if (args.len < 3) {
         std.log.err("Usage: solnix build <input_file.snx> [output_file]", .{});
         std.log.err("Example: solnix build program.snx program.o", .{});
@@ -12,29 +14,60 @@ pub fn execute(allocator: std.mem.Allocator, args: []const []const u8) !void {
     const input_file = args[2];
     const output_file = if (args.len > 3) args[3] else "out.o";
 
+    // Validate input file
     utils.validateSnxInputFile(input_file) catch |err| {
         switch (err) {
-            utils.UtilError.InvalidFileExtension => std.log.err("Invalid file extension. Expected .snx: {s}", .{input_file}),
-            utils.UtilError.FileNotFound => std.log.err("Input file not found: {s}", .{input_file}),
-            else => std.log.err("Input file error ({any}): {s}", .{ err, input_file }),
+            utils.UtilError.InvalidFileExtension =>
+                std.log.err("Invalid file extension (.snx required): {s}", .{input_file}),
+            utils.UtilError.FileNotFound =>
+                std.log.err("Input file not found: {s}", .{input_file}),
+            else =>
+                std.log.err("Input file error ({any}): {s}", .{ err, input_file }),
         }
         std.process.exit(1);
     };
 
-    // Read input file
-    const file = try std.fs.cwd().openFile(input_file, .{});
-    defer file.close();
-
-    const src = try file.readToEndAlloc(allocator, std.math.maxInt(usize));
-    defer allocator.free(src);
-
-    std.log.info("Compiling {s}...", .{input_file});
-
-    // Use compiler library directly
-    compiler.compile(src, output_file) catch |err| {
-        std.log.err("Compilation failed: {any}", .{err});
+    // Locate compiler 
+    const compiler_path = utils.findCompiler(allocator) catch {
+        std.log.err(
+            "solnix-compiler not found.\n" ++
+            "Install it or set SOLNIX_COMPILER=/path/to/solnix-compiler",
+            .{},
+        );
         std.process.exit(1);
     };
+    // FIX: Add defer here to clean up the compiler_path after execute() finishes
+    defer allocator.free(compiler_path);
+
+    std.log.info("Using compiler: {s}", .{compiler_path});
+    std.log.info("Building {s} → {s}", .{ input_file, output_file });
+
+    // Execute the child process
+    var argv = [_][]const u8{
+        compiler_path,
+        "compile",
+        input_file,
+        "-o",
+        output_file,
+    };
+
+    var child = std.process.Child.init(&argv, allocator);
+    child.stdin_behavior = .Inherit;
+    child.stdout_behavior = .Inherit;
+    child.stderr_behavior = .Inherit;
+
+    const term = try child.spawnAndWait();
+    
+    // Check exit status
+    const exited_successfully = switch (term) {
+        .Exited => |code| code == 0,
+        else => false,
+    };
+
+    if (!exited_successfully) {
+        std.log.err("Compilation failed", .{});
+        std.process.exit(1);
+    }
 
     std.log.info("Build successful: {s}", .{output_file});
 }
