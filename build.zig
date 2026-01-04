@@ -1,40 +1,28 @@
 const std = @import("std");
 
 pub fn build(b: *std.Build) void {
-    const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
+    const target = b.standardTargetOptions(.{});
 
-    // 1. Create the compiler module
-    const compiler_mod = b.createModule(.{
-        .root_source_file = b.path("../solnix-compiler/src/compiler.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-
-    // 2. Create the executable module
-    const exe_mod = b.createModule(.{
-        .root_source_file = b.path("src/main.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-
-    // 3. Add the module (Currently unused by main.zig, but ready)
-    exe_mod.addImport("solnix-compiler", compiler_mod);
-
-    // 4. Create the executable
+    // Build the executable
     const exe = b.addExecutable(.{
-        .name = "solnix",
-        .root_module = exe_mod,
+        .name = "solnix", // name expected by install.sh
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("./src/main.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
     });
 
+    // Install the executable to zig-out/bin
     b.installArtifact(exe);
 
-    // 4. Run step
+    // Make this the default build target
+    b.default_step.dependOn(&exe.step);
+
+    // Optional: allow `zig build run` to execute the CLI
     const run_cmd = b.addRunArtifact(exe);
-    run_cmd.step.dependOn(b.getInstallStep());
     if (b.args) |args| {
         run_cmd.addArgs(args);
     }
-    const run_step = b.step("run", "Run the solnix app");
-    run_step.dependOn(&run_cmd.step);
 }
