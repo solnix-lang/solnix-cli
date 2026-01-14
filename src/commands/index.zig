@@ -1,6 +1,6 @@
 const std = @import("std");
 
-// Import specific command modules
+
 pub const run = @import("run.zig");
 pub const build = @import("build.zig");
 
@@ -30,9 +30,9 @@ pub fn printWelcome() void {
         \\
         \\
     , .{
-        // Line 1 (4 args)
+        
         CYAN, BOLD, RESET, WHITE,
-        // Line 2 (4 args)
+        
         GREEN, BOLD, RESET, WHITE,
     });
 }

@@ -14,7 +14,7 @@ pub fn execute(
     const input_file = args[2];
     const output_file = if (args.len > 3) args[3] else "out.o";
 
-    // Validate input file
+    
     utils.validateSnxInputFile(input_file) catch |err| {
         switch (err) {
             utils.UtilError.InvalidFileExtension =>
@@ -27,7 +27,7 @@ pub fn execute(
         std.process.exit(1);
     };
 
-    // Locate compiler 
+    
     const compiler_path = utils.findCompiler(allocator) catch {
         std.log.err(
             "solnix-compiler not found.\n" ++
@@ -36,13 +36,13 @@ pub fn execute(
         );
         std.process.exit(1);
     };
-    // FIX: Add defer here to clean up the compiler_path after execute() finishes
+    
     defer allocator.free(compiler_path);
 
     std.log.info("Using compiler: {s}", .{compiler_path});
     std.log.info("Building {s} → {s}", .{ input_file, output_file });
 
-    // Execute the child process
+    
     var argv = [_][]const u8{
         compiler_path,
         "compile",
@@ -58,7 +58,7 @@ pub fn execute(
 
     const term = try child.spawnAndWait();
     
-    // Check exit status
+    
     const exited_successfully = switch (term) {
         .Exited => |code| code == 0,
         else => false,

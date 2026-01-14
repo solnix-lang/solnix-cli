@@ -23,13 +23,13 @@ pub fn validateSnxInputFile(path: []const u8) !void {
 }
 
 pub fn findCompiler(allocator: std.mem.Allocator) ![]const u8 {
-    // 1. Check environment variable override
+    
     if (std.process.getEnvVarOwned(allocator, "SOLNIX_COMPILER")) |path| {
         if (fileExists(path)) return path;
         allocator.free(path);
     } else |_| {}
 
-    // 2. Search PATH
+    
     const path_env = std.process.getEnvVarOwned(allocator, "PATH") 
         catch return error.CompilerNotFound;
     defer allocator.free(path_env);
@@ -42,10 +42,10 @@ pub fn findCompiler(allocator: std.mem.Allocator) ![]const u8 {
         ) catch continue; 
 
         if (fileExists(full)) {
-            return full; // Return the allocated string; caller must free it
+            return full; 
         }
         
-        // Only free if we didn't return it
+        
         allocator.free(full);
     }
 
