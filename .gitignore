@@ -1,23 +1,23 @@
-# Zig build output
-zig-out/
-.zig-cache/
-zig-cache/
+# Rust/Cargo
+target/
+**/*.rs.bk
+**/*.rlib
+**/*.d
+**/*.so
+**/*.dll
+**/*.exe
 
-# Zig build artifacts (older versions)
-zig-cache/
+# Cargo
+**/Cargo.lock
 
-# OS / editor junk
-.DS_Store
-Thumbs.db
-
-# Editors
-.vscode/
+# IDEs
 .idea/
-*.swp
-*.swo
+.vscode/
+*.sublime-project
+*.sublime-workspace
 
-# Logs
-*.log
+# MacOS
+.DS_Store
 
-# Local env files
-.env
+# Linux
+*~
